@@ -8,8 +8,7 @@ if TYPE_CHECKING:
 
 
 class Deprecated(admonitions.Warning):
-    """Deprecated admonition that looks like a warning and has
-    no version requirement."""
+    """Deprecation admonition that looks like a warning and has no version requirement."""
 
     node_class = nodes.admonition
 

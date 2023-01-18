@@ -24,9 +24,9 @@ def cache_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     return cache_dir
 
 
-@pytest.mark.anyio
+@pytest.mark.anyio()
 @pytest.fixture(autouse=True)
-async def temporary_cli_server(monkeypatch: pytest.MonkeyPatch):
+async def _temporary_cli_server(monkeypatch: pytest.MonkeyPatch):
     # ignore DAGGER_SESSION_PORT
     monkeypatch.delenv("DAGGER_SESSION_PORT", raising=False)
 
@@ -53,9 +53,10 @@ async def temporary_cli_server(monkeypatch: pytest.MonkeyPatch):
 
         with open(cli_bin, "rb") as f:
             if downloader.archive_name.endswith(".zip"):
-                with zipfile.ZipFile(archive, mode="w") as zip:
-                    with zip.open("dagger.exe", mode="w") as zf:
-                        shutil.copyfileobj(f, zf)
+                with zipfile.ZipFile(archive, mode="w") as zar, zar.open(
+                    "dagger.exe", mode="w"
+                ) as zf:
+                    shutil.copyfileobj(f, zf)
             else:
                 with tarfile.open(fileobj=archive, mode="w:gz") as tar:
                     tarinfo = tar.gettarinfo(arcname="dagger", fileobj=f)
@@ -111,9 +112,9 @@ async def temporary_cli_server(monkeypatch: pytest.MonkeyPatch):
     yield
 
 
-@pytest.mark.anyio
-@pytest.mark.slow
-@pytest.mark.provision
+@pytest.mark.anyio()
+@pytest.mark.slow()
+@pytest.mark.provision()
 async def test_download_bin(cache_dir: Path):
     # make some garbage for the image provisioner to collect
     garbage_path = cache_dir / "dagger-gcme"

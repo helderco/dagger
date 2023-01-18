@@ -53,22 +53,6 @@ tests = ["attrs[tests-no-zope]", "zope.interface"]
 tests-no-zope = ["cloudpickle", "cloudpickle", "hypothesis", "hypothesis", "mypy (>=0.971,<0.990)", "mypy (>=0.971,<0.990)", "pympler", "pympler", "pytest (>=4.3.0)", "pytest (>=4.3.0)", "pytest-mypy-plugins", "pytest-mypy-plugins", "pytest-xdist[psutil]", "pytest-xdist[psutil]"]
 
 [[package]]
-name = "autoflake"
-version = "1.7.8"
-description = "Removes unused imports and unused variables"
-category = "dev"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "autoflake-1.7.8-py3-none-any.whl", hash = "sha256:46373ef69b6714f5064c923bb28bd797c4f8a9497f557d87fc36665c6d956b39"},
-    {file = "autoflake-1.7.8.tar.gz", hash = "sha256:e7e46372dee46fa1c97acf310d99d922b63d369718a270809d7c278d34a194cf"},
-]
-
-[package.dependencies]
-pyflakes = ">=1.1.0,<3"
-tomli = {version = ">=2.0.1", markers = "python_version < \"3.11\""}
-
-[[package]]
 name = "babel"
 version = "2.11.0"
 description = "Internationalization utilities"
@@ -247,18 +231,6 @@ files = [
 ]
 
 [[package]]
-name = "eradicate"
-version = "2.1.0"
-description = "Removes commented-out code."
-category = "dev"
-optional = false
-python-versions = "*"
-files = [
-    {file = "eradicate-2.1.0-py3-none-any.whl", hash = "sha256:8bfaca181db9227dc88bdbce4d051a9627604c2243e7d85324f6d6ce0fd08bb2"},
-    {file = "eradicate-2.1.0.tar.gz", hash = "sha256:aac7384ab25b1bf21c4c012de9b4bf8398945a14c98c911545b2ea50ab558014"},
-]
-
-[[package]]
 name = "exceptiongroup"
 version = "1.1.0"
 description = "Backport of PEP 654 (exception groups)"
@@ -272,98 +244,6 @@ files = [
 
 [package.extras]
 test = ["pytest (>=6)"]
-
-[[package]]
-name = "flake8"
-version = "5.0.4"
-description = "the modular source code checker: pep8 pyflakes and co"
-category = "dev"
-optional = false
-python-versions = ">=3.6.1"
-files = [
-    {file = "flake8-5.0.4-py2.py3-none-any.whl", hash = "sha256:7a1cf6b73744f5806ab95e526f6f0d8c01c66d7bbe349562d22dfca20610b248"},
-    {file = "flake8-5.0.4.tar.gz", hash = "sha256:6fbe320aad8d6b95cec8b8e47bc933004678dc63095be98528b7bdd2a9f510db"},
-]
-
-[package.dependencies]
-mccabe = ">=0.7.0,<0.8.0"
-pycodestyle = ">=2.9.0,<2.10.0"
-pyflakes = ">=2.5.0,<2.6.0"
-
-[[package]]
-name = "flake8-black"
-version = "0.3.6"
-description = "flake8 plugin to call black as a code style validator"
-category = "dev"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "flake8-black-0.3.6.tar.gz", hash = "sha256:0dfbca3274777792a5bcb2af887a4cad72c72d0e86c94e08e3a3de151bb41c34"},
-    {file = "flake8_black-0.3.6-py3-none-any.whl", hash = "sha256:fe8ea2eca98d8a504f22040d9117347f6b367458366952862ac3586e7d4eeaca"},
-]
-
-[package.dependencies]
-black = ">=22.1.0"
-flake8 = ">=3"
-tomli = {version = "*", markers = "python_version < \"3.11\""}
-
-[package.extras]
-develop = ["build", "twine"]
-
-[[package]]
-name = "flake8-bugbear"
-version = "22.12.6"
-description = "A plugin for flake8 finding likely bugs and design problems in your program. Contains warnings that don't belong in pyflakes and pycodestyle."
-category = "dev"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "flake8-bugbear-22.12.6.tar.gz", hash = "sha256:4cdb2c06e229971104443ae293e75e64c6107798229202fbe4f4091427a30ac0"},
-    {file = "flake8_bugbear-22.12.6-py3-none-any.whl", hash = "sha256:b69a510634f8a9c298dfda2b18a8036455e6b19ecac4fe582e4d7a0abfa50a30"},
-]
-
-[package.dependencies]
-attrs = ">=19.2.0"
-flake8 = ">=3.0.0"
-
-[package.extras]
-dev = ["coverage", "hypothesis", "hypothesmith (>=0.2)", "pre-commit", "tox"]
-
-[[package]]
-name = "flake8-eradicate"
-version = "1.4.0"
-description = "Flake8 plugin to find commented out code"
-category = "dev"
-optional = false
-python-versions = ">=3.7,<4.0"
-files = [
-    {file = "flake8-eradicate-1.4.0.tar.gz", hash = "sha256:3088cfd6717d1c9c6c3ac45ef2e5f5b6c7267f7504d5a74b781500e95cb9c7e1"},
-    {file = "flake8_eradicate-1.4.0-py3-none-any.whl", hash = "sha256:e3bbd0871be358e908053c1ab728903c114f062ba596b4d40c852fd18f473d56"},
-]
-
-[package.dependencies]
-attrs = "*"
-eradicate = ">=2.0,<3.0"
-flake8 = ">=3.5,<6"
-
-[[package]]
-name = "flake8-isort"
-version = "6.0.0"
-description = "flake8 plugin that integrates isort ."
-category = "dev"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "flake8-isort-6.0.0.tar.gz", hash = "sha256:537f453a660d7e903f602ecfa36136b140de279df58d02eb1b6a0c84e83c528c"},
-    {file = "flake8_isort-6.0.0-py3-none-any.whl", hash = "sha256:aa0cac02a62c7739e370ce6b9c31743edac904bae4b157274511fc8a19c75bbc"},
-]
-
-[package.dependencies]
-flake8 = "*"
-isort = ">=5.0.0,<6"
-
-[package.extras]
-test = ["pytest"]
 
 [[package]]
 name = "gql"
@@ -499,24 +379,6 @@ files = [
 ]
 
 [[package]]
-name = "isort"
-version = "5.11.4"
-description = "A Python utility / library to sort Python imports."
-category = "dev"
-optional = false
-python-versions = ">=3.7.0"
-files = [
-    {file = "isort-5.11.4-py3-none-any.whl", hash = "sha256:c033fd0edb91000a7f09527fe5c75321878f98322a77ddcc81adbd83724afb7b"},
-    {file = "isort-5.11.4.tar.gz", hash = "sha256:6db30c5ded9815d813932c04c2f85a360bcdd35fed496f4d8f35495ef0a261b6"},
-]
-
-[package.extras]
-colors = ["colorama (>=0.4.3,<0.5.0)"]
-pipfile-deprecated-finder = ["pipreqs", "requirementslib"]
-plugins = ["setuptools"]
-requirements-deprecated-finder = ["pip-api", "pipreqs"]
-
-[[package]]
 name = "jinja2"
 version = "3.1.2"
 description = "A very fast and expressive template engine."
@@ -582,18 +444,6 @@ files = [
     {file = "MarkupSafe-2.1.1-cp39-cp39-win32.whl", hash = "sha256:d4306c36ca495956b6d568d276ac11fdd9c30a36f1b6eb928070dc5360b22e1c"},
     {file = "MarkupSafe-2.1.1-cp39-cp39-win_amd64.whl", hash = "sha256:46d00d6cfecdde84d40e572d63735ef81423ad31184100411e6e3388d405e247"},
     {file = "MarkupSafe-2.1.1.tar.gz", hash = "sha256:7f91197cc9e48f989d12e4e6fbc46495c446636dfc81b9ccf50bb0ec74b91d4b"},
-]
-
-[[package]]
-name = "mccabe"
-version = "0.7.0"
-description = "McCabe checker, plugin for flake8"
-category = "dev"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "mccabe-0.7.0-py2.py3-none-any.whl", hash = "sha256:6c2d30ab6be0e4a46919781807b4f0d834ebdd6c6e3dca0bda5a15f863427b6e"},
-    {file = "mccabe-0.7.0.tar.gz", hash = "sha256:348e0240c33b60bbdf4e523192ef919f28cb2c3d7d5c7794f74009290f236325"},
 ]
 
 [[package]]
@@ -744,6 +594,21 @@ files = [
 ]
 
 [[package]]
+name = "nodeenv"
+version = "1.7.0"
+description = "Node.js virtual environment builder"
+category = "dev"
+optional = false
+python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*"
+files = [
+    {file = "nodeenv-1.7.0-py2.py3-none-any.whl", hash = "sha256:27083a7b96a25f2f5e1d8cb4b6317ee8aeda3bdd121394e5ac54e498028a042e"},
+    {file = "nodeenv-1.7.0.tar.gz", hash = "sha256:e0e7f7dfb85fc5394c6fe1e8fa98131a2473e04311a45afb6508f7cf1836fa2b"},
+]
+
+[package.dependencies]
+setuptools = "*"
+
+[[package]]
 name = "packaging"
 version = "23.0"
 description = "Core utilities for Python packages"
@@ -831,30 +696,6 @@ tomli = ">=1.2.2"
 poetry-plugin = ["poetry (>=1.0,<2.0)"]
 
 [[package]]
-name = "pycodestyle"
-version = "2.9.1"
-description = "Python style guide checker"
-category = "dev"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "pycodestyle-2.9.1-py2.py3-none-any.whl", hash = "sha256:d1735fc58b418fd7c5f658d28d943854f8a849b01a5d0a1e6f3f3fdd0166804b"},
-    {file = "pycodestyle-2.9.1.tar.gz", hash = "sha256:2c9607871d58c76354b697b42f5d57e1ada7d261c261efac224b664affdc5785"},
-]
-
-[[package]]
-name = "pyflakes"
-version = "2.5.0"
-description = "passive checker of Python programs"
-category = "dev"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "pyflakes-2.5.0-py2.py3-none-any.whl", hash = "sha256:4579f67d887f804e67edb544428f264b7b24f435b263c4614f384135cea553d2"},
-    {file = "pyflakes-2.5.0.tar.gz", hash = "sha256:491feb020dca48ccc562a8c0cbe8df07ee13078df59813b83959cbdada312ea3"},
-]
-
-[[package]]
 name = "pygments"
 version = "2.14.0"
 description = "Pygments is a syntax highlighting package written in Python."
@@ -868,6 +709,25 @@ files = [
 
 [package.extras]
 plugins = ["importlib-metadata"]
+
+[[package]]
+name = "pyright"
+version = "1.1.288"
+description = "Command line wrapper for pyright"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "pyright-1.1.288-py3-none-any.whl", hash = "sha256:ab5da004e2de3b0567c685aa8d38bba68d872b1b4a20f1013400ace571a7efc7"},
+    {file = "pyright-1.1.288.tar.gz", hash = "sha256:c45594c5833b01d5125bc291d2498d4ed0f2c2e3dd4fd8236fbdaf597099f617"},
+]
+
+[package.dependencies]
+nodeenv = ">=1.6.0"
+
+[package.extras]
+all = ["twine (>=3.4.1)"]
+dev = ["twine (>=3.4.1)"]
 
 [[package]]
 name = "pytest"
@@ -1031,6 +891,49 @@ pygments = ">=2.6.0,<3.0.0"
 
 [package.extras]
 jupyter = ["ipywidgets (>=7.5.1,<8.0.0)"]
+
+[[package]]
+name = "ruff"
+version = "0.0.218"
+description = "An extremely fast Python linter, written in Rust."
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "ruff-0.0.218-py3-none-macosx_10_7_x86_64.whl", hash = "sha256:436063f6d041a3532595f1e2be9f6d5ffd2d64546903715214808f5957b9f59a"},
+    {file = "ruff-0.0.218-py3-none-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl", hash = "sha256:23e645a291af72a6ae8478c2f7eb884693314800f81d9e49701897705950cec9"},
+    {file = "ruff-0.0.218-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a2aba4de4ad34cdfb2b803c693fa23ff08037a0cc22fa6f336d196d91c95fdac"},
+    {file = "ruff-0.0.218-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:42284cfd11dd716629c9f77f4448d70f53be0be1b4a3eaccb928c4e6fa8e80ad"},
+    {file = "ruff-0.0.218-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:70ba1ef098b7d96adea226df0a9f6d91a3bedd871d7ac511c57479c97bd25120"},
+    {file = "ruff-0.0.218-py3-none-manylinux_2_17_ppc64.manylinux2014_ppc64.whl", hash = "sha256:501283f89795121480ea080b389df9f279230ed1fd3cb31ba4d67c46d061ac47"},
+    {file = "ruff-0.0.218-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:b03cf85b75ea4908f526ec621bdff2a1c83a00da1cb92503aea8c623da5ba1a4"},
+    {file = "ruff-0.0.218-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:db1da1ef2bb62747c054ac4487d3bdaa41ea141583c48421743595cc1553d899"},
+    {file = "ruff-0.0.218-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2ca74e57f07a865caf1faac8ee61e69e4f3d07c05bc1c3a59f433b2dff233d68"},
+    {file = "ruff-0.0.218-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:06470f79b585d8da8f636fc010d2c7339c00e440b6438947180d3408d98defc8"},
+    {file = "ruff-0.0.218-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:956d789f2abdac7a53bce927763e743d64e1062778aa1b968038cd5f3591fee0"},
+    {file = "ruff-0.0.218-py3-none-musllinux_1_2_i686.whl", hash = "sha256:16cd16a040dc6eb8d752cebaeaee9c777637f3a1dd9c90016fd7f93ee7073e79"},
+    {file = "ruff-0.0.218-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:e3e6dc582ec2de004c8acaa33fb2232788fbd62151a859c3f6bea5e82f3e2ced"},
+    {file = "ruff-0.0.218-py3-none-win32.whl", hash = "sha256:09eed542f0258a8876156fe2af374c245b14cece8f8f5499e5b69ffc95d19f07"},
+    {file = "ruff-0.0.218-py3-none-win_amd64.whl", hash = "sha256:6a97f39ff71307ff6265269b627facb70473daaddfdced5ef0bf6947c225b93e"},
+    {file = "ruff-0.0.218.tar.gz", hash = "sha256:97a28ead137240755012859cfefafce88762b131eae24ca4f8df00eec3dea9d0"},
+]
+
+[[package]]
+name = "setuptools"
+version = "65.7.0"
+description = "Easily download, build, install, upgrade, and uninstall Python packages"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "setuptools-65.7.0-py3-none-any.whl", hash = "sha256:8ab4f1dbf2b4a65f7eec5ad0c620e84c34111a68d3349833494b9088212214dd"},
+    {file = "setuptools-65.7.0.tar.gz", hash = "sha256:4d3c92fac8f1118bb77a22181355e29c239cabfe2b9effdaa665c66b711136d7"},
+]
+
+[package.extras]
+docs = ["furo", "jaraco.packaging (>=9)", "jaraco.tidelift (>=1.4)", "pygments-github-lexers (==0.0.5)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-favicon", "sphinx-hoverxref (<2)", "sphinx-inline-tabs", "sphinx-lint", "sphinx-notfound-page (==0.8.3)", "sphinx-reredirects", "sphinxcontrib-towncrier"]
+testing = ["build[virtualenv]", "filelock (>=3.4.0)", "flake8 (<5)", "flake8-2020", "ini2toml[lite] (>=0.9)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "pip (>=19.1)", "pip-run (>=8.8)", "pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=1.3)", "pytest-flake8", "pytest-mypy (>=0.9.1)", "pytest-perf", "pytest-timeout", "pytest-xdist", "tomli-w (>=1.0.0)", "virtualenv (>=13.0.0)", "wheel"]
+testing-integration = ["build[virtualenv]", "filelock (>=3.4.0)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "pytest", "pytest-enabler", "pytest-xdist", "tomli", "virtualenv (>=13.0.0)", "wheel"]
 
 [[package]]
 name = "shellingham"
@@ -1420,4 +1323,4 @@ server = ["strawberry-graphql"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "f12710aebb783d704b3dfa794f93a9035ac0b8de0c5f6f39c7b010ce376085c1"
+content-hash = "23476d42882b6468d3768e7d3514f27c42e72ad06ae9e094ea05af6b2226641b"

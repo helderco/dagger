@@ -4,7 +4,8 @@ import sys
 import anyio
 import typer
 
-from ..log import configure_logging
+from dagger.log import configure_logging
+
 from . import Server
 
 app = typer.Typer()
@@ -14,14 +15,11 @@ app = typer.Typer()
 def main(
     schema: bool = typer.Option(False, "-schema", help="Save schema to file and exit")
 ):
-    """
-    Entrypoint for a dagger extension.
-    """
-
+    """Entrypoint for a dagger extension."""
     sys.path.insert(0, ".")
 
     try:
-        from main import server  # type: ignore
+        from main import server
     except ImportError as e:
         raise typer.BadParameter(
             "No “server: dagger.Server” found in “main” module."

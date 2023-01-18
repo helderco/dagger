@@ -148,7 +148,6 @@ class Downloader:
 
     def get(self) -> str:
         """Download CLI to cache and return its path."""
-
         cli_bin_path = self.cache_dir / f"{self.CLI_BIN_PREFIX}{self.version}"
 
         if self.platform.os == "windows":
@@ -161,9 +160,9 @@ class Downloader:
                 raise ProvisionError("Failed to download CLI from archive") from e
 
         # garbage collection of old binaries
-        for bin in self.cache_dir.glob(f"{self.CLI_BIN_PREFIX}*"):
-            if bin != cli_bin_path:
-                bin.unlink()
+        for file in self.cache_dir.glob(f"{self.CLI_BIN_PREFIX}*"):
+            if file != cli_bin_path:
+                file.unlink()
 
         return str(cli_bin_path.absolute())
 
@@ -243,9 +242,9 @@ class Downloader:
     @contextlib.contextmanager
     def _extract_from_zip(self, reader: StreamReader) -> Iterator[IO[bytes]]:
         # FIXME: extract from stream instead of loading archive into memory
-        with zipfile.ZipFile(reader.getbuffer()) as zip:
+        with zipfile.ZipFile(reader.getbuffer()) as zar:
             try:
-                with zip.open("dagger.exe") as file:
+                with zar.open("dagger.exe") as file:
                     yield file
             except KeyError as e:
                 raise FileNotFoundError from e

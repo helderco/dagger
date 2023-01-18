@@ -1,5 +1,5 @@
 """
-Clone a Private Git Repository and print the content of the README.md file
+Clone a Private Git Repository and print the content of the README.md file.
 """
 
 import os

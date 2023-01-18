@@ -1,5 +1,5 @@
 """
-Execute a command
+Execute a command.
 """
 
 import sys
