@@ -1,9 +1,8 @@
 import logging
 from typing import TypeAlias, TypeVar
 
-from gql.client import AsyncClientSession
+from gql.client import AsyncClientSession, SyncClientSession
 from gql.client import Client as GraphQLClient
-from gql.client import SyncClientSession
 from gql.transport import AsyncTransport, Transport
 
 from .config import Config, ConnectParams

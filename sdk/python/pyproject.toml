@@ -163,16 +163,18 @@ target-version = ["py310"]
 [tool.ruff]
 src = ["src", "tests"]
 target-version = "py311"
-# show-source =  true
 select = ["ALL"]
 ignore = [
-    "D1",
+    "A",
     "ANN",
-    "S101",
-    "RET504",
     "ARG002",
+    "BLE",
+    "D1",
     "DTZ",
+    "FBT",
     "PLC0414",
+    "RET504",
+    "S",
 ]
 unfixable = [
     "T201",
@@ -185,11 +187,12 @@ known-first-party = ["dagger"]
 extend-immutable-calls = ["typer.Option"]
 
 [tool.ruff.per-file-ignores]
-"__init__.py" = ["F401", "F403",]
-"src/dagger/api/gen*.py" = ["D", "UP007", "A"]
-"cli.py" = ["FBT"]
-"tests/api/test_inputs.py" = ["ERA001"]
 "../../docs/current/sdk/python/*.py" = ["T201"]
+"./examples/*" = ["T201"]
+"./src/dagger/api/gen*.py" = ["D", "UP007"]
+"./tests/api/test_inputs.py" = ["ERA001"]
+"__init__.py" = ["F401", "F403",]
+"cli.py" = ["FBT"]
 
 [tool.ruff.pydocstyle]
 convention = "numpy"

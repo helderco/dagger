@@ -21,12 +21,12 @@ def main(
     try:
         from main import server
     except ImportError as e:
-        raise typer.BadParameter(
-            "No “server: dagger.Server” found in “main” module."
-        ) from e
+        msg = "No “server: dagger.Server” found in “main” module."
+        raise typer.BadParameter(msg) from e
 
     if not isinstance(server, Server):
-        raise typer.BadParameter("The “server” must be an instance of “dagger.Server”")
+        msg = "The “server” must be an instance of “dagger.Server”"
+        raise typer.BadParameter(msg)
 
     configure_logging(logging.DEBUG if server.debug else logging.INFO)
 

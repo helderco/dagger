@@ -73,7 +73,7 @@ async def _temporary_cli_server(monkeypatch: pytest.MonkeyPatch):
         }
 
         class RequestHandler(BaseHTTPRequestHandler):
-            def do_GET(self):
+            def do_GET(self):  # noqa: N802
                 response = files.get(self.path)
                 if not response:
                     self.send_response(404)

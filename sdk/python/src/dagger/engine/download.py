@@ -157,7 +157,8 @@ class Downloader:
             try:
                 cli_bin_path = self._download(cli_bin_path)
             except Exception as e:
-                raise ProvisionError("Failed to download CLI from archive") from e
+                msg = "Failed to download CLI from archive"
+                raise ProvisionError(msg) from e
 
         # garbage collection of old binaries
         for file in self.cache_dir.glob(f"{self.CLI_BIN_PREFIX}*"):
@@ -181,10 +182,11 @@ class Downloader:
                 raise
 
             if actual_hash != expected_hash:
-                raise ValueError(
+                msg = (
                     f"Downloaded CLI binary checksum ({actual_hash}) "
                     f"does not match expected checksum ({expected_hash})"
                 )
+                raise ValueError(msg)
 
         tmp_bin_path = Path(tmp_bin.name)
         tmp_bin_path.chmod(0o700)
@@ -198,7 +200,8 @@ class Downloader:
                 checksum, filename = line.split()
                 if filename == archive_name:
                     return checksum
-        raise KeyError("Could not find checksum for CLI archive")
+        msg = "Could not find checksum for CLI archive"
+        raise KeyError(msg)
 
     def extract_cli_archive(self, dest: IO[bytes]) -> str:
         """
@@ -235,9 +238,8 @@ class Downloader:
                     reader.readall()
                     break
             else:
-                raise FileNotFoundError(
-                    "There is no item named 'dagger' in the archive"
-                )
+                msg = "There is no item named 'dagger' in the archive"
+                raise FileNotFoundError(msg)
 
     @contextlib.contextmanager
     def _extract_from_zip(self, reader: StreamReader) -> Iterator[IO[bytes]]:

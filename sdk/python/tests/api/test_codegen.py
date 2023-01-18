@@ -3,7 +3,7 @@ from textwrap import dedent
 import pytest
 from graphql import GraphQLArgument as Argument
 from graphql import GraphQLField as Field
-from graphql import GraphQLID as ID
+from graphql import GraphQLID as ID  # noqa: N814
 from graphql import GraphQLInputField as Input
 from graphql import GraphQLInputField as InputField
 from graphql import GraphQLInputObjectType as InputObject

@@ -41,9 +41,8 @@ def _get_schema() -> GraphQLSchema:
     cfg = dagger.Config()
     with Engine(cfg) as conn, Session(conn, cfg) as session:
         if not session.client.schema:
-            raise typer.BadParameter(
-                "Schema not initialized. Make sure the dagger engine is running."
-            )
+            msg = "Schema not initialized. Make sure the dagger engine is running."
+            raise typer.BadParameter(msg)
         return session.client.schema
 
 

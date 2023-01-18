@@ -30,7 +30,8 @@ class CLISession(SyncResourceManager):
                 stack.push(proc)
                 conn = self._get_conn(proc)
             except Exception as e:
-                raise ProvisionError("Dagger engine failed to start") from e
+                msg = "Dagger engine failed to start"
+                raise ProvisionError(msg) from e
         return conn
 
     def _start(self) -> subprocess.Popen:
@@ -66,7 +67,8 @@ class CLISession(SyncResourceManager):
             else:
                 return proc
 
-        raise RuntimeError("CLI busy")
+        msg = "CLI busy"
+        raise RuntimeError(msg)
 
     def _get_conn(self, proc: subprocess.Popen) -> ConnectParams:
         # FIXME: implement engine session timeout (self.cfg.engine_timeout?)
@@ -82,9 +84,11 @@ class CLISession(SyncResourceManager):
             raise subprocess.CalledProcessError(ret, " ".join(proc.args), out, err)
 
         if not conn:
-            raise ValueError("No connection params")
+            msg = "No connection params"
+            raise ValueError(msg)
 
         try:
             return self.converter.loads(conn, ConnectParams)
         except cattrs.BaseValidationError as e:
-            raise ValueError(f"Invalid connection params: {conn}") from e
+            msg = f"Invalid connection params: {conn}"
+            raise ValueError(msg) from e

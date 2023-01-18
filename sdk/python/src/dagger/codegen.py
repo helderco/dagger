@@ -113,7 +113,7 @@ class Context:
 
 
 @joiner
-def generate(schema: GraphQLSchema, sync: bool = False) -> Iterator[str]:
+def generate(schema: GraphQLSchema, sync: bool = False) -> Iterator[str]:  # noqa: C901
     """Code generation main function."""
     yield textwrap.dedent(
         """\
