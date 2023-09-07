@@ -3540,23 +3540,27 @@ class Socket(Type):
 
 _client = Client()
 cache_volume = _client.cache_volume
+check = _client.check
+check_result = _client.check_result
 check_version_compatibility = _client.check_version_compatibility
 container = _client.container
+current_environment = _client.current_environment
 default_platform = _client.default_platform
 directory = _client.directory
+environment = _client.environment
 file = _client.file
 git = _client.git
 host = _client.host
 http = _client.http
+install_environment = _client.install_environment
 pipeline = _client.pipeline
-project = _client.project
-project_command = _client.project_command
 secret = _client.secret
 set_secret = _client.set_secret
 socket = _client.socket
+static_check_result = _client.static_check_result
 
 
-def client() -> Client:
+def default_client() -> Client:
     """Return the default client instance."""
     return _client
 
@@ -3597,19 +3601,23 @@ __all__ = [
     "Socket",
     "SocketID",
     "cache_volume",
+    "check",
+    "check_result",
     "check_version_compatibility",
-    "client",
     "container",
+    "current_environment",
+    "default_client",
     "default_platform",
     "directory",
+    "environment",
     "file",
     "git",
     "host",
     "http",
+    "install_environment",
     "pipeline",
-    "project",
-    "project_command",
     "secret",
     "set_secret",
     "socket",
+    "static_check_result",
 ]

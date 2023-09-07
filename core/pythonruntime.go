@@ -52,7 +52,7 @@ func (env *Environment) pythonRuntime(
 	buildEnvCtr, err = buildEnvCtr.WithExec(ctx, bk, progSock, env.Platform, ContainerExecOpts{
 		Args: []string{
 			"shiv",
-			"-e", "dagger.server.cli:app",
+			"-e", "dagger.ext.cli:app",
 			"-o", runtimeExecutablePath,
 			"--root", "/tmp/.shiv",
 			".",

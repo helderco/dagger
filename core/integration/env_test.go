@@ -37,6 +37,12 @@ func TestEnvCmd(t *testing.T) {
 			expectedName:    "basic",
 			expectedRoot:    "../../../../../../",
 		},
+		{
+			environmentPath: "core/integration/testdata/environments/python/basic",
+			expectedSDK:     "python",
+			expectedName:    "basic",
+			expectedRoot:    "../../../../../../",
+		},
 	} {
 		tc := tc
 		for _, testGitEnv := range []bool{false, true} {
@@ -331,6 +337,13 @@ func TestEnvChecks(t *testing.T) {
 				"cool-string-only-return",
 				"cool-error-only-return",
 				"cool-string-error-return",
+			},
+		},
+		{
+			name:            "happy-path",
+			environmentPath: "core/integration/testdata/environments/python/basic",
+			selectedChecks: []string{
+				"cool-static-check",
 			},
 		},
 		{
