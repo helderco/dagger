@@ -54,6 +54,9 @@ type DaggerValue interface {
 
 	// Get returns the final value for the query builder.
 	Get(*dagger.Client) any
+
+	// Usage provides additional information for the flag.
+	Usage() string
 }
 
 // sliceValue is a pflag.Value that builds a slice of DaggerValue instances.
@@ -115,6 +118,10 @@ func (v *sliceValue[T]) Set(s string) error {
 	return nil
 }
 
+func (v *sliceValue[T]) Usage() string {
+	return ""
+}
+
 // containerValue is a pflag.Value that builds a dagger.Container from a
 // base image name.
 type containerValue struct {
@@ -144,6 +151,10 @@ func (v *containerValue) Get(c *dagger.Client) any {
 	return c.Container().From(v.String())
 }
 
+func (v *containerValue) Usage() string {
+	return ""
+}
+
 // directoryValue is a pflag.Value that builds a dagger.Directory from a host path.
 type directoryValue struct {
 	address string
@@ -163,6 +174,10 @@ func (v *directoryValue) Set(s string) error {
 
 func (v *directoryValue) String() string {
 	return v.address
+}
+
+func (v *directoryValue) Usage() string {
+	return "By default it's a path to a local directory but there's other supported URL schemes:\ngit://, ssh://, https://, git+ssh://, git+https://.\nEncode git ref in the URL fragment (e.g., https://github.com/dagger/dagger#v0.9.2)"
 }
 
 type parsedGitURL struct {
@@ -246,6 +261,10 @@ func (v *fileValue) Get(c *dagger.Client) any {
 	return c.Host().File(v.String())
 }
 
+func (v *fileValue) Usage() string {
+	return ""
+}
+
 // secretValue is a pflag.Value that builds a dagger.Secret from a name and a
 // plaintext value.
 type secretValue struct {
@@ -272,6 +291,10 @@ func (v *secretValue) String() string {
 
 func (v *secretValue) Get(c *dagger.Client) any {
 	return c.SetSecret(v.name, v.plaintext)
+}
+
+func (v *secretValue) Usage() string {
+	return ""
 }
 
 // AddFlag adds a flag appropriate for the argument type. Should return a
@@ -301,6 +324,13 @@ func (r *modFunctionArg) AddFlag(flags *pflag.FlagSet, dag *dagger.Client) (any,
 		objName := r.TypeDef.AsObject.Name
 
 		if val := GetCustomFlagValue(objName); val != nil {
+			if v, ok := val.(DaggerValue); ok && v.Usage() != "" {
+				if usage != "" {
+					usage = fmt.Sprintf("%s\n%s", usage, v.Usage())
+				} else {
+					usage = v.Usage()
+				}
+			}
 			flags.Var(val, name, usage)
 			return val, nil
 		}
@@ -328,6 +358,13 @@ func (r *modFunctionArg) AddFlag(flags *pflag.FlagSet, dag *dagger.Client) (any,
 			objName := elementType.AsObject.Name
 
 			if val := GetCustomFlagValueSlice(objName); val != nil {
+				if v, ok := val.(DaggerValue); ok && v.Usage() != "" {
+					if usage != "" {
+						usage = fmt.Sprintf("%s\n%s", usage, v.Usage())
+					} else {
+						usage = v.Usage()
+					}
+				}
 				flags.Var(val, name, usage)
 				return val, nil
 			}
