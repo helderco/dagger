@@ -12,6 +12,7 @@ from typing import Any, TypeGuard, TypeVar, cast
 import anyio
 import cattrs
 import cattrs.gen
+from beartype import beartype
 from rich.console import Console
 from typing_extensions import dataclass_transform, overload
 
@@ -98,7 +99,7 @@ class Module:
 
         await dag.current_function_call().return_value(dagger.JSON(output))
 
-    async def _register(self, main_obj_name: str) -> dagger.ModuleID:  # noqa: C901
+    async def _register(self, main_obj_name: str) -> dagger.ModuleID:  # noqa: C901, PLR0912
         mod = dag.module()
 
         # Object types
@@ -112,11 +113,20 @@ class Module:
                 # Module constructor is the main object's constructor
                 obj_type.add_constructor()
 
-            # Object type
-            obj_type_def = dag.type_def().with_object(
-                obj_name,
-                description=get_doc(obj_type.cls),
-            )
+            # Object/interface type
+            obj_type_def = dag.type_def()
+            obj_doc = get_doc(obj_type.cls)
+
+            if obj_type.interface:
+                obj_type_def = obj_type_def.with_interface(
+                    obj_name,
+                    description=obj_doc,
+                )
+            else:
+                obj_type_def = obj_type_def.with_object(
+                    obj_name,
+                    description=obj_doc,
+                )
 
             # Object fields
             if obj_type.fields:
@@ -157,8 +167,11 @@ class Module:
                     else obj_type_def.with_function(func_type_def)
                 )
 
-            # Add object to module
-            mod = mod.with_object(obj_type_def)
+            # Add object/interface to module
+            if obj_type.interface:
+                mod = mod.with_interface(obj_type_def)
+            else:
+                mod = mod.with_object(obj_type_def)
 
         # Enum types
         for name, cls in self._enums.items():
@@ -432,10 +445,22 @@ class Module:
 
         return wrapper(cls) if cls else wrapper
 
-    def _process_type(self, cls: T) -> T:
-        cls.__dagger_module__ = self
+    def _process_type(self, cls: T, interface: bool = False) -> T:
+        obj_def = ObjectType(cls, interface=interface)
 
-        obj_def = self._objects.setdefault(cls.__name__, ObjectType(cls))
+        cls.__dagger_module__ = self
+        cls.__dagger_object_type__ = obj_def
+        self._objects[cls.__name__] = obj_def
+
+        # Find all methods decorated with `@mod.function`
+        def _is_function(obj: Any) -> TypeGuard[Function]:
+            return isinstance(obj, Function)
+
+        for name, fn in inspect.getmembers(cls, _is_function):
+            obj_def.functions[name] = fn.get_resolver()
+
+        if interface:
+            return cls
 
         # Register hooks for renaming field names in `mod.field()`.
         attr_overrides = {}
@@ -476,14 +501,20 @@ class Module:
             ),
         )
 
-        # Find all methods decorated with `@mod.function`
-        def _is_function(obj: Any) -> TypeGuard[Function]:
-            return isinstance(obj, Function)
-
-        for name, fn in inspect.getmembers(cls, _is_function):
-            obj_def.functions[name] = fn.get_resolver()
-
         return cls
+
+    @overload
+    def interface(self, cls: T) -> T: ...
+
+    @overload
+    def interface(self) -> Callable[[T], T]: ...
+
+    def interface(self, cls: T | None = None) -> T | Callable[[T], T]:
+        def wrapper(cls: T) -> T:
+            new_cls = beartype(typing.runtime_checkable(cls))
+            return self._process_type(new_cls, interface=True)
+
+        return wrapper(cls) if cls else wrapper
 
     @overload
     def enum_type(self, cls: T) -> T: ...

@@ -291,6 +291,7 @@ class Function(Generic[P, R]):
 @dataclasses.dataclass(slots=True)
 class ObjectType:
     cls: type
+    interface: bool = False
     fields: dict[APIName, Field] = dataclasses.field(default_factory=dict)
     functions: dict[APIName, FunctionResolver] = dataclasses.field(default_factory=dict)
 
