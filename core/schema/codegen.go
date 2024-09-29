@@ -9,25 +9,16 @@ import (
 	"github.com/moby/buildkit/identity"
 )
 
-type engineSchema struct {
+type codegenSchema struct {
 	srv *dagql.Server
 }
 
-var _ SchemaResolvers = &engineSchema{}
+var _ SchemaResolvers = &codegenSchema{}
 
-func (s *engineSchema) Install() {
+func (s *codegenSchema) Install() {
 	dagql.Fields[*core.Query]{
-		dagql.Func("daggerEngine", s.engine).
-			Doc("The Dagger engine container configuration and state"),
-
-		// This internal API allows queries to "freeze" the cache entry set they are operating on in
-		// subselections even though the cache entry set was originally created with an impure API that
-		// may return different results on every query.
-		// This is conceptually similar to the "blob" API where we freeze the impure load of a client's
-		// host directory, except there we use the content store to hold the blob, but here we use an
-		// in-memory sync map to attached to the session state to hold the cache entry set.
-		dagql.Func("__internalCacheEntrySet", s.internalCacheEntrySet).
-			Doc("(Internal-only) retrieve a cache entry set by it's unique ID"),
+		dagql.Func("codegen", s.codegen).
+			Doc("Configuration for generating SDK code based on API schema"),
 	}.Install(s.srv)
 
 	dagql.Fields[*core.Engine]{
@@ -52,11 +43,11 @@ func (s *engineSchema) Install() {
 	dagql.Fields[*core.EngineCacheEntry]{}.Install(s.srv)
 }
 
-func (s *engineSchema) engine(ctx context.Context, parent *core.Query, args struct{}) (*core.Engine, error) {
-	return &core.Engine{Query: parent}, nil
+func (s *codegenSchema) codegen(ctx context.Context, parent *core.Query, args struct{}) (*core.Codegen, error) {
+	return &core.Codegen{Query: parent}, nil
 }
 
-func (s *engineSchema) localCache(ctx context.Context, parent *core.Engine, args struct{}) (*core.EngineCache, error) {
+func (s *codegenSchema) localCache(ctx context.Context, parent *core.Engine, args struct{}) (*core.EngineCache, error) {
 	if err := parent.Query.RequireMainClient(ctx); err != nil {
 		return nil, err
 	}
@@ -66,7 +57,7 @@ func (s *engineSchema) localCache(ctx context.Context, parent *core.Engine, args
 	}, nil
 }
 
-func (s *engineSchema) cacheEntrySet(ctx context.Context, parent *core.EngineCache, args struct{}) (inst dagql.Instance[*core.EngineCacheEntrySet], _ error) {
+func (s *codegenSchema) cacheEntrySet(ctx context.Context, parent *core.EngineCache, args struct{}) (inst dagql.Instance[*core.EngineCacheEntrySet], _ error) {
 	if err := parent.Query.RequireMainClient(ctx); err != nil {
 		return inst, err
 	}
@@ -101,7 +92,7 @@ func (s *engineSchema) cacheEntrySet(ctx context.Context, parent *core.EngineCac
 	return inst, nil
 }
 
-func (s *engineSchema) cachePrune(ctx context.Context, parent *core.EngineCache, args struct{}) (dagql.Nullable[core.Void], error) {
+func (s *codegenSchema) cachePrune(ctx context.Context, parent *core.EngineCache, args struct{}) (dagql.Nullable[core.Void], error) {
 	void := dagql.Null[core.Void]()
 	if err := parent.Query.RequireMainClient(ctx); err != nil {
 		return void, err
@@ -115,7 +106,7 @@ func (s *engineSchema) cachePrune(ctx context.Context, parent *core.EngineCache,
 	return void, nil
 }
 
-func (s *engineSchema) internalCacheEntrySet(ctx context.Context, parent *core.Query, args struct {
+func (s *codegenSchema) internalCacheEntrySet(ctx context.Context, parent *core.Query, args struct {
 	CacheEntrySetID string
 },
 ) (*core.EngineCacheEntrySet, error) {
@@ -139,6 +130,6 @@ func (s *engineSchema) internalCacheEntrySet(ctx context.Context, parent *core.Q
 	return entrySet, nil
 }
 
-func (s *engineSchema) cacheEntrySetEntries(ctx context.Context, parent *core.EngineCacheEntrySet, args struct{}) ([]*core.EngineCacheEntry, error) {
+func (s *codegenSchema) cacheEntrySetEntries(ctx context.Context, parent *core.EngineCacheEntrySet, args struct{}) ([]*core.EngineCacheEntry, error) {
 	return parent.EntriesList, nil
 }

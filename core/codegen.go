@@ -1,59 +1,270 @@
 package core
 
 import (
-	"context"
-
-	"github.com/moby/buildkit/solver/pb"
 	"github.com/vektah/gqlparser/v2/ast"
-
-	"github.com/dagger/dagger/dagql"
 )
 
-type GeneratedCode struct {
-	Code              dagql.Instance[*Directory] `field:"true" doc:"The directory containing the generated code."`
-	VCSGeneratedPaths []string                   `field:"true" name:"vcsGeneratedPaths" doc:"List of paths to mark generated in version control (i.e. .gitattributes)."`
-	VCSIgnoredPaths   []string                   `field:"true" name:"vcsIgnoredPaths" doc:"List of paths to ignore in version control (i.e. .gitignore)."`
+type Codegen struct {
+	Query *Query
+	deps  *ModDeps
 }
 
-func NewGeneratedCode(code dagql.Instance[*Directory]) *GeneratedCode {
-	return &GeneratedCode{
-		Code: code,
-	}
-}
-
-func (*GeneratedCode) Type() *ast.Type {
+func (*Codegen) Type() *ast.Type {
 	return &ast.Type{
-		NamedType: "GeneratedCode",
+		NamedType: "Codegen",
 		NonNull:   true,
 	}
 }
 
-func (*GeneratedCode) TypeDescription() string {
-	return "The result of running an SDK's codegen."
+func (*Codegen) TypeDescription() string {
+	return "Configuration for generating SDK code based on API schema"
 }
 
-func (code GeneratedCode) Clone() *GeneratedCode {
-	cp := code
-	if cp.Code.Self != nil {
-		cp.Code.Self = cp.Code.Self.Clone()
+// TODO
+func (*Codegen) Introspect() {
+}
+
+// TODO
+func (*Codegen) GenerateClient() {
+}
+
+// TODO
+func (*Codegen) GenerateModule() {
+}
+
+func newSyntax(t []*TypeDef, c LanguageConventions) *ClientBindings {
+	s := &ClientBindings{
+		typeDefs: t,
+		Config: ClientBindingsConfig{
+			LanguageConventions: c,
+		},
 	}
-	return &cp
+	for _, typeDef := range s.typeDefs {
+		switch typeDef.Kind {
+		case TypeDefKindScalar:
+			s.Scalars = append(s.Scalars, newScalarType(typeDef.AsScalar.Value, s))
+		case TypeDefKindEnum:
+			s.Enums = append(s.Enums, newEnumType(typeDef.AsEnum.Value, s))
+		case TypeDefKindObject:
+			s.Objects = append(s.Objects, newObjectType(typeDef.AsObject.Value, s))
+		}
+	}
+	return s
 }
 
-func (code *GeneratedCode) WithVCSGeneratedPaths(paths []string) *GeneratedCode {
-	code = code.Clone()
-	code.VCSGeneratedPaths = paths
-	return code
+// ClientBindings is an abstraction for generating language specific client bindings.
+type ClientBindings struct {
+	Config     ClientBindingsConfig
+	Scalars    []*ScalarType
+	Enums      []*EnumType
+	Objects    []*ObjectType
+	Interfaces []*IntefaceType
+	typeDefs   []*TypeDef
 }
 
-func (code *GeneratedCode) WithVCSIgnoredPaths(paths []string) *GeneratedCode {
-	code = code.Clone()
-	code.VCSIgnoredPaths = paths
-	return code
+type ClientBindingsConfig struct {
+	LanguageConventions LanguageConventions
 }
 
-var _ HasPBDefinitions = (*GeneratedCode)(nil)
+type LanguageConventions struct {
+	Scalar      NamingConvention
+	Enum        NamingConvention
+	EnumValue   NamingConvention
+	Input       NamingConvention
+	InputField  NamingConvention
+	Object      NamingConvention
+	Interface   NamingConvention
+	Function    NamingConvention
+	FunctionArg NamingConvention
+}
 
-func (code *GeneratedCode) PBDefinitions(ctx context.Context) ([]*pb.Definition, error) {
-	return code.Code.Self.PBDefinitions(ctx)
+type NamingConvention string
+
+const (
+	PascalCase         NamingConvention = "PASCAL_CASE"
+	CamelCase          NamingConvention = "CAMEL_CASE"
+	KebabCase          NamingConvention = "KEBAB_CASE"
+	SnakeCase          NamingConvention = "SNAKE_CASE"
+	ScreamingSnakeCase NamingConvention = "SCREAMING_SNAKE_CASE"
+)
+
+func newScalarType(t *ScalarTypeDef, c *ClientBindings) *ScalarType {
+	return &ScalarType{
+		Name:         newName(t.Name, c.Config.LanguageConventions.Scalar),
+		Description:  t.Description,
+		SourceModule: t.SourceModuleName,
+	}
+}
+
+type ScalarType struct {
+	Name         *Name
+	Description  string
+	SourceModule string
+}
+
+func newEnumType(t *EnumTypeDef, c *ClientBindings) *EnumType {
+	values := make([]*EnumValue, 0, len(t.Values))
+	for _, v := range t.Values {
+		values = append(values, &EnumValue{
+			Name:        newName(v.Name, NamingConvention("")),
+			Description: v.Description,
+		})
+	}
+	return &EnumType{
+		Name:         newName(t.Name, c.Config.LanguageConventions.Enum),
+		Description:  t.Description,
+		Values:       values,
+		SourceModule: t.SourceModuleName,
+	}
+}
+
+type EnumType struct {
+	Name         *Name
+	Description  string
+	Values       []*EnumValue
+	SourceModule string
+}
+
+type EnumValue struct {
+	Name        *Name
+	Description string
+}
+
+type TypeRef struct {
+	Kind       string // TODO: TypeKind
+	IsNullable bool
+}
+
+type InputObjectType struct {
+	Name        *Name
+	Description string
+	Fields      []*InputField
+}
+
+type InputField struct {
+	Name              *Name
+	IsNullable        bool
+	IsDeprecated      bool
+	DeprecationReason string
+}
+
+func newObjectType(t *ObjectTypeDef, c *ClientBindings) *ObjectType {
+	funcs := make([]*ObjectFunction, 0, len(t.Fields)+len(t.Functions))
+	for _, f := range t.Fields {
+		funcs = append(funcs, newObjectFieldFunction(f, c))
+	}
+	for _, f := range t.Functions {
+		funcs = append(funcs, newObjectFunction(f, c))
+	}
+	return &ObjectType{
+		Name:        newName(t.Name, c.Config.LanguageConventions.Object),
+		Description: t.Description,
+		Functions:   funcs,
+	}
+}
+
+type ObjectType struct {
+	Name         *Name
+	Description  string
+	SourceModule string
+	Functions    []*ObjectFunction
+}
+
+type IntefaceType struct {
+	Name         string
+	NameWords    []string
+	SourceModule string
+	Functions    []*ObjectFunction
+}
+
+func newObjectFieldFunction(t *FieldTypeDef, c *ClientBindings) *ObjectFunction {
+	return &ObjectFunction{
+		Name:        newName(t.Name, c.Config.LanguageConventions.Function),
+		Description: t.Description,
+		isField:     true,
+	}
+}
+
+func newObjectFunction(t *Function, c *ClientBindings) *ObjectFunction {
+	args := make([]*InputValue, 0, len(t.Args))
+	for _, a := range t.Args {
+		args = append(args, newInputValue(a, c))
+	}
+	return &ObjectFunction{
+		Name:        newName(t.Name, c.Config.LanguageConventions.Function),
+		Description: t.Description,
+		HasArgs:     len(args) > 0,
+		Args:        args,
+	}
+}
+
+type ObjectFunction struct {
+	Name            *Name
+	Description     string
+	HasArgs         bool
+	HasOptionalArgs bool
+	HasRequiredArgs bool
+	Args            []*InputValue
+	isField         bool
+}
+
+func newInputValue(t *FunctionArg, c *ClientBindings) *InputValue {
+	return &InputValue{
+		Name:         newName(t.Name, c.Config.LanguageConventions.FunctionArg),
+		Description:  t.Description,
+		DefaultValue: t.DefaultValue,
+		IsNullable:   t.TypeDef.Optional,
+		IsOptional:   t.TypeDef.Optional || t.DefaultValue == nil,
+	}
+}
+
+type InputValue struct {
+	Name         *Name
+	Description  string
+	DefaultValue JSON
+	IsNullable   bool
+	IsOptional   bool
+}
+
+func newName(original string, conv NamingConvention) *Name {
+	words := []string{}
+	n := &Name{
+		Original: original,
+		Words:    words,
+	}
+	switch conv {
+	case PascalCase:
+		n.Formatted = n.AsPascal()
+	case CamelCase:
+		n.Formatted = n.AsCamel()
+	case KebabCase:
+		n.Formatted = n.AsKebab()
+	case SnakeCase:
+		n.Formatted = n.AsSnake()
+	default:
+		n.Formatted = original
+	}
+	return n
+}
+
+type Name struct {
+	Original  string
+	Formatted string
+	Words     []string
+}
+
+func (n *Name) AsPascal() string {
+	return ""
+}
+
+func (n *Name) AsCamel() string {
+	return ""
+}
+
+func (n *Name) AsKebab() string {
+	return ""
+}
+
+func (n *Name) AsSnake() string {
+	return ""
 }
