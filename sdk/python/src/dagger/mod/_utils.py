@@ -1,6 +1,8 @@
 import builtins
 import dataclasses
 import functools
+import importlib
+import importlib.util
 import inspect
 import operator
 import types
@@ -173,3 +175,12 @@ def get_alt_constructor(cls) -> types.MethodType | None:
         if inspect.ismethod(fn) and fn.__self__ is cls:
             return fn
     return None
+
+
+def get_parent_module_doc(obj: type) -> str | None:
+    """Get the docstring of the parent module."""
+    spec = importlib.util.find_spec(obj.__module__)
+    if not spec or not spec.parent:
+        return None
+    mod = importlib.import_module(spec.parent)
+    return inspect.getdoc(mod)

@@ -15,7 +15,7 @@ import anyio
 import cattrs
 import cattrs.gen
 from rich.console import Console
-from typing_extensions import Self, dataclass_transform, overload
+from typing_extensions import dataclass_transform, overload
 
 import dagger
 from dagger import dag, telemetry
@@ -39,6 +39,7 @@ from dagger.mod._types import APIName, FieldDefinition, ObjectDefinition
 from dagger.mod._utils import (
     asyncify,
     get_doc,
+    get_parent_module_doc,
     is_annotated,
     normalize_name,
     to_pascal_case,
@@ -66,20 +67,15 @@ class Module:
         self._converter: cattrs.Converter = make_converter()
         self._resolvers: list[Resolver] = []
         self._fn_call = dag.current_function_call()
-        self._mod = dag.module()
+        self._objects: dict[str, type] = {}
         self._enums: dict[str, type[enum.Enum]] = {}
-
-    def with_description(self, description: str | None) -> Self:
-        if description:
-            self._mod = self._mod.with_description(description)
-        return self
 
     def add_resolver(self, resolver: Resolver):
         self._resolvers.append(resolver)
 
-    def get_resolvers(self, mod_name: str) -> Resolvers:
+    def get_resolvers(self, main_obj_name: str) -> Resolvers:
         grouped: Resolvers = defaultdict(dict)
-        main_object = ObjectDefinition(to_pascal_case(mod_name))
+        main_object = ObjectDefinition(main_obj_name)
 
         for resolver in self._resolvers:
             if resolver.origin is None:
@@ -105,7 +101,7 @@ class Module:
 
         if main_object not in grouped:
             msg = (
-                f"Module “{mod_name}” doesn't define any top-level functions or "
+                f"Module “{main_obj_name}” doesn't define any top-level functions or "
                 f"a “{main_object.name}” class decorated with @object_type."
             )
             raise UserError(msg)
@@ -140,6 +136,15 @@ class Module:
 
     async def serve(self):
         mod_name = await dag.current_module().name()
+        main_obj_name = to_pascal_case(mod_name)
+
+        if main_obj_name not in self._objects:
+            msg = (
+                f"No `@dagger.object_type` decorated class named {main_obj_name} "
+                "was found"
+            )
+            raise UserError(msg)
+
         parent_name = await self._fn_call.parent_name()
         fn = (
             functools.partial(self._invoke, parent_name)
@@ -147,7 +152,7 @@ class Module:
             else self._register
         )
 
-        result = await fn(mod_name)
+        result = await fn(main_obj_name)
 
         try:
             output = json.dumps(result)
@@ -161,46 +166,49 @@ class Module:
         )
         await dag.current_function_call().return_value(dagger.JSON(output))
 
-    async def _register(self, mod_name: str) -> dagger.ModuleID:
-        resolvers = self.get_resolvers(mod_name)
-        mod_name = to_pascal_case(mod_name)
+    async def _register(self, main_obj_name: str) -> dagger.ModuleID:
+        resolvers = self.get_resolvers(main_obj_name)
 
         # Resolvers are collected at import time, but only actually
         # registered during "serve".
-        mod = self._mod
+        mod = dag.module()
 
         for obj, obj_resolvers in resolvers.items():
-            if obj.name == "":
-                msg = "Unexpected empty object name"
-                raise InternalError(msg)
+            if is_main_obj := obj.name == main_obj_name:
+                # TODO: replace self.resolvers with self._objects
+                cls = self._objects[obj.name]
 
-            typedef = dag.type_def().with_object(
+                if desc := get_parent_module_doc(cls):
+                    mod = mod.with_description(desc)
+
+            obj_def = dag.type_def().with_object(
                 obj.name,
                 description=obj.doc,
             )
             for r in obj_resolvers.values():
-                if r.name == "" and obj.name != mod_name:
+                if r.name == "" and not is_main_obj:
                     # Skip constructors of classes that are not the main object.
                     continue
 
-                typedef = r.register(typedef)
+                # TODO: move registration from resolvers to here for learning
+                obj_def = r.register(obj_def)
                 logger.debug("registered => %s", str(r))
 
-            mod = mod.with_object(typedef)
+            mod = mod.with_object(obj_def)
 
         for name, cls in self._enums.items():
-            typedef = dag.type_def().with_enum(name, description=get_doc(cls))
+            enum_def = dag.type_def().with_enum(name, description=get_doc(cls))
             for member in cls:
-                typedef = typedef.with_enum_value(
+                enum_def = enum_def.with_enum_value(
                     str(member.value),
                     description=getattr(member, "description", None),
                 )
-            mod = mod.with_enum(typedef)
+            mod = mod.with_enum(enum_def)
 
         return await mod.id()
 
-    async def _invoke(self, parent_name: str, mod_name: str) -> Any:
-        resolvers = self.get_resolvers(mod_name)
+    async def _invoke(self, parent_name: str, main_obj_name: str) -> Any:
+        resolvers = self.get_resolvers(main_obj_name)
         name = await self._fn_call.name()
         parent_json = await self._fn_call.parent()
         input_args = await self._fn_call.input_args()
@@ -500,13 +508,16 @@ class Module:
         # These can be recalculated at any time but it helps to check if
         # this class was properly decorated and also acts as a placeholder
         # for later additions to the decorator arguments.
-        cls.__dagger_type__ = ObjectDefinition(  # type: ignore generalTypeIssues
+        cls.__dagger_type__ = ObjectDefinition(
             # Classes should already be in PascalCase, just normalizing here
             # to avoid a mismatch with the module name in PascalCase
             # (for the main object).
             name=to_pascal_case(cls.__name__),
             doc=get_doc(cls),
         )
+
+        cls.__dagger_module__ = self
+        self._objects.setdefault(cls.__name__, cls)
 
         # Constructor.
         self.function(name="")(cls)
