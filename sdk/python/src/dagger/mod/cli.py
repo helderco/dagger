@@ -1,10 +1,13 @@
 """Command line interface for the dagger extension runtime."""
 
+import contextlib
 import importlib
 import importlib.metadata
 import importlib.util
+import inspect
 import logging
 import os
+import sys
 import typing
 
 import anyio
@@ -21,24 +24,24 @@ ENTRY_POINT_GROUP: typing.Final[str] = typing.cast(str, __package__)
 IMPORT_PKG: typing.Final[str] = os.getenv("DAGGER_DEFAULT_PYTHON_PACKAGE", "main")
 
 
-def app(mod: Module | None = None) -> int | None:
+def run(main_cls: type | None = None):
     """Entrypoint for a Python Dagger module."""
-    telemetry.initialize()
-    try:
-        return anyio.run(main, mod)
-    finally:
-        telemetry.shutdown()
+    sys.exit(anyio.run(main, main_cls))
 
 
-async def main(mod: Module | None = None) -> int | None:
+async def main(main_cls: type | None = None) -> int | None:
     """Async entrypoint for a Dagger module."""
-    # Establishing connection early on to allow returning dag.error().
-    # Note: if there's a connection error dag.error() won't be sent but
-    # should be logged and the traceback shown on the function's stderr output.
-    async with await dagger.connect():
+    async with contextlib.AsyncExitStack() as stack:
+        telemetry.initialize()
+        stack.callback(telemetry.shutdown)
+
+        # Establishing connection early on to allow returning dag.error().
+        # Note: if there's a connection error dag.error() won't be sent but
+        # should be logged and the traceback shown on the function's stderr output.
+        await stack.enter_async_context(await dagger.connect())
+
         try:
-            if mod is None:
-                mod = load_module()
+            mod = load_module(main_cls)
             return await mod.serve()
         except (ModuleError, dagger.QueryError) as e:
             await record_exception(e)
@@ -49,25 +52,35 @@ async def main(mod: Module | None = None) -> int | None:
             return 1
 
 
-def load_module() -> Module:
+def load_module(main_cls: type | None = None) -> Module:
     """Load the dagger.Module instance via the main object entry point."""
-    ep = get_entry_point()
+    if main_cls is None:
+        ep = get_entry_point()
+        try:
+            main_cls = ep.load()
+        except Exception as e:
+            logger.exception(
+                "Error while importing Python module '%s' with Dagger functions",
+                ep.module,
+            )
+            raise ModuleLoadError(str(e)) from e
+
+    msg = (
+        "The main object must be a class decorated with @dagger.object_type, "
+        f"found '{main_cls!r}'"
+    )
+
+    if not inspect.isclass(main_cls):
+        raise ModuleLoadError(msg)
+
     try:
-        cls = ep.load()
-    except Exception as e:
-        logger.exception(
-            "Error while importing Python module '%s' with Dagger functions",
-            ep.module,
-        )
-        raise ModuleLoadError(str(e)) from e
-    try:
-        return cls.__dagger_module__
+        mod = main_cls.__dagger_module__
     except AttributeError:
-        msg = (
-            "The main object must be a class decorated with @dagger.object_type, "
-            f"found '{type(cls)}'"
-        )
         raise ModuleLoadError(msg) from None
+
+    mod = typing.cast(Module, mod)
+    mod._main_name = main_cls.__name__  # noqa: SLF001
+    return mod
 
 
 def get_entry_point() -> importlib.metadata.EntryPoint:

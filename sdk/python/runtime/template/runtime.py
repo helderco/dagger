@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
-import sys
-
-from dagger.mod.cli import app
+from dagger.mod import run
 
 if __name__ == "__main__":
-    sys.exit(app())
+    run()

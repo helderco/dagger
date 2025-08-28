@@ -21,7 +21,10 @@ const (
 	VenvPath              = "/opt/venv"
 	ProjectCfg            = "pyproject.toml"
 	PipCompileLock        = "requirements.lock"
+	PyLock                = "pylock.toml"
 	UvLock                = "uv.lock"
+	UvScript              = "main.py"
+	UvScriptLock          = "main.py.lock"
 	MainObjectName        = "Main"
 )
 
@@ -290,14 +293,6 @@ func (m *PythonSdk) uv() dagger.WithContainerFunc {
 // - <source>/src/<package_name>/__init__.py
 // - <source>/src/<package_name>/main.py
 func (m *PythonSdk) WithTemplate() *PythonSdk {
-	m.Container = m.Container.
-		WithFile(
-			RuntimeExecutablePath,
-			dag.CurrentModule().Source().File("template/runtime.py"),
-			dagger.ContainerWithFileOpts{Permissions: 0o755},
-		).
-		WithEntrypoint([]string{RuntimeExecutablePath})
-
 	d := m.Discovery
 
 	// NB: We can't detect if it's a new module with `dagger develop --sdk`
@@ -415,30 +410,55 @@ func (m *PythonSdk) WithUpdates() *PythonSdk {
 		return m
 	}
 
+	if m.IsInit {
+		m.Container = m.Container.WithExec([]string{"uv", "lock"})
+		return m
+	}
+
 	ctr := m.Container
 	d := m.Discovery
 
 	// Update lock file but without upgrading dependencies.
 	switch {
-	case m.UseUvLock():
-		// Support uv.lock. Takes precedence.
+	case d.HasFile(PipCompileLock):
+		// Support requirements.lock (legacy).
+		// ctr = ctr.WithExec([]string{
+		// 	"uv", "pip", "compile", "-q", "--universal",
+		// 	"-o", PipCompileLock,
+		// 	ProjectCfg,
+		// })
+
+		ctr = ctr.WithExec([]string{
+			"uv", "pip", "compile", "-q", "--universal",
+			"-o", PyLock,
+			PipCompileLock,
+		})
+
+		d.FileSet[PyLock] = struct{}{}
+		delete(d.FileSet, PipCompileLock)
+
+	case d.HasFile(PyLock):
+	// 	// Support uv.lock. Takes precedence.
+	// 	args := []string{
+	// 		"uv", "pip", "compile", "-q", "--universal",
+	// 		"-o", PipCompileLock,
+	// 		ProjectCfg,
+	// 	}
+	//
+	// 	if m.VendorPath != "" {
+	// 		args = append(args, path.Join(m.VendorPath, ProjectCfg))
+	// 	}
+	//
+	// 	ctr = ctr.WithExec(args)
+
+	case d.HasFile(UvScriptLock) && d.HasFile(UvScript):
+		ctr = ctr.WithExec([]string{"uv", "lock", "--script", UvScript})
+
+	default:
 		// Always update if uv.lock exists, but only create a new uv.lock
 		// if init and there's not already a requirements.lock.
+		// ctr = ctr.WithExec([]string{"uv", "lock"})
 		ctr = ctr.WithExec([]string{"uv", "lock"})
-
-	case d.HasFile(PipCompileLock) && !m.IsInit:
-		// Support requirements.lock (legacy).
-		args := []string{
-			"uv", "pip", "compile", "-q", "--universal",
-			"-o", PipCompileLock,
-			ProjectCfg,
-		}
-
-		if m.VendorPath != "" {
-			args = append(args, path.Join(m.VendorPath, ProjectCfg))
-		}
-
-		ctr = ctr.WithExec(args)
 	}
 
 	m.Container = ctr
@@ -453,45 +473,64 @@ func (m *PythonSdk) WithInstall() *PythonSdk {
 	// before exporting the module back to the host.
 	ctr := m.Container.WithEnvVariable("UV_COMPILE_BYTECODE", "1")
 
-	// Support uv.lock for simple and fast project management workflow.
-	if m.UseUvLock() {
-		// While best practice is to sync dependencies first with only pyproject.toml and
-		// uv.lock, user projects can have more required files for a minimally successful
-		// `uv sync --no-install-project --no-dev`.
-		// Besides, uv is fast enough that's not too bad to skip this optimization.
+	if m.UseUvScript() {
 		m.Container = ctr.
-			WithExec([]string{"uv", "sync", "--no-dev"}).
-			// Activate virtualenv to avoid having to prepend `uv run` to the entrypoint.
-			WithEnvVariable("VIRTUAL_ENV", "$UV_PROJECT_ENVIRONMENT", dagger.ContainerWithEnvVariableOpts{
-				Expand: true,
-			}).
-			WithEnvVariable("PATH", "$VIRTUAL_ENV/bin:$PATH", dagger.ContainerWithEnvVariableOpts{
-				Expand: true,
+			WithExec([]string{"uv", "sync", "--script", UvScript}).
+			WithEntrypoint([]string{
+				"uv", "run",
+				"--directory", path.Join(m.ContextDirPath, m.SubPath),
+				"--script", UvScript,
 			})
 		return m
 	}
 
+	// Support uv.lock for simple and fast project management workflow.
+	if m.UseUvLock() {
+		m.Container = ctr.
+			WithExec([]string{"uv", "sync", "--no-dev"}).
+			WithEntrypoint([]string{"uv", "run", "-m", "dagger.mod"})
+		return m
+	}
+	// While best practice is to sync dependencies first with only pyproject.toml and
+	// uv.lock, user projects can have more required files for a minimally successful
+	// `uv sync --no-install-project --no-dev`.
+	// Besides, uv is fast enough that's not too bad to skip this optimization.
+	// Activate virtualenv to avoid having to prepend `uv run` to the entrypoint.
+	// WithEnvVariable("VIRTUAL_ENV", "$UV_PROJECT_ENVIRONMENT", dagger.ContainerWithEnvVariableOpts{
+	// 	Expand: true,
+	// }).
+	// WithEnvVariable("PATH", "$VIRTUAL_ENV/bin:$PATH", dagger.ContainerWithEnvVariableOpts{
+	// 	Expand: true,
+	// }).
+	// WithEntrypoint([]string{"uv", "run", "-m", "dagger.mod"})
+	// return m
+	// }
+
 	// Fallback to pip-compile workflow (legacy).
 	install := []string{"pip", "install", "-e", "./sdk", "-e", "."}
 	check := []string{"pip", "check"}
+	run := []string{"python", "-m", "dagger.mod"}
+
+	// Support requirements.lock.
+	if m.Discovery.HasFile(PipCompileLock) {
+		// If there's a lock file, we assume that all the dependencies are
+		// included in it so we can avoid resolving for them to get a faster
+		// install.
+		install = append(install, "--no-deps", "-r", PipCompileLock)
+	}
 
 	// uv has a compatible API with pip
 	if m.UseUv() {
-		// Support requirements.lock.
-		if m.Discovery.HasFile(PipCompileLock) {
-			// If there's a lock file, we assume that all the dependencies are
-			// included in it so we can avoid resolving for them to get a faster
-			// install.
-			install = append(install, "--no-deps", "-r", PipCompileLock)
-		}
-		// pip compiles by default, but not uv
 		install = append([]string{"uv"}, install...)
 		check = append([]string{"uv"}, check...)
+		run = append([]string{"uv"}, run...)
+		run[1] = "run"
 	}
 
 	m.Container = ctr.
 		WithExec(install).
-		WithExec(check)
+		WithExec(check).
+		WithEntrypoint(run)
 
 	return m
 }

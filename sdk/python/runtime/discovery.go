@@ -153,6 +153,11 @@ func (m *PythonSdk) UseUvLock() bool {
 	return m.UseUv() && (d.HasFile(UvLock) || !d.HasFile(PipCompileLock) && m.IsInit)
 }
 
+func (m *PythonSdk) UseUvScript() bool {
+	d := m.Discovery
+	return m.UseUv() && d.HasFile(UvScriptLock) && d.HasFile(UvScript)
+}
+
 // AddDirectory adds a directory to the module's source.
 func (m *PythonSdk) AddDirectory(name string, dir *dagger.Directory) {
 	m.ContextDir = m.ContextDir.WithDirectory(path.Join(m.SubPath, name), dir)
@@ -285,7 +290,7 @@ func (d *Discovery) loadModInfo(ctx context.Context, m *PythonSdk) error {
 func (d *Discovery) loadFiles(ctx context.Context, m *PythonSdk) error {
 	// If there's a dagger.json and no pyproject.toml, it's an init'ed module
 	// adding sources (`dagger develop --sdk`).
-	if !m.IsInit && !d.HasFile("pyproject.toml") {
+	if !m.IsInit && !d.HasFile(ProjectCfg) && !d.HasFile(UvScriptLock) && !d.HasFile(UvScript) {
 		m.IsInit = true
 	}
 

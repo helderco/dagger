@@ -5,6 +5,7 @@ from dagger.mod._arguments import Ignore
 from dagger.mod._arguments import Name
 from dagger.mod._module import Module
 from dagger.mod._types import Enum
+from dagger.mod.cli import run as run
 
 
 _default_mod = Module()

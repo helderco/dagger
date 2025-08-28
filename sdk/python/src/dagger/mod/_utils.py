@@ -260,11 +260,14 @@ def get_alt_constructor(cls: type[T]) -> Callable[..., T] | None:
 
 
 def get_parent_module_doc(obj: type) -> str | None:
-    """Get the docstring of the parent module."""
-    spec = importlib.util.find_spec(obj.__module__)
-    if not spec or not spec.parent:
-        return None
-    mod = importlib.import_module(spec.parent)
+    """Get the docstring of the parent module or script."""
+    mod_name = obj.__module__
+    if obj.__module__ != "__main__":
+        spec = importlib.util.find_spec(obj.__module__)
+        if not spec or not spec.parent:
+            return None
+        mod_name = spec.parent
+    mod = importlib.import_module(mod_name)
     return inspect.getdoc(mod)
 
 
