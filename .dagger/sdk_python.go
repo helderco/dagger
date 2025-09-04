@@ -131,30 +131,24 @@ func (t PythonSDK) TestPublish(ctx context.Context, tag string) error {
 func (t PythonSDK) Publish(
 	ctx context.Context,
 	tag string,
-
 	// +optional
 	dryRun bool,
-
 	// +optional
 	pypiRepo string,
 	// +optional
 	pypiToken *dagger.Secret,
 ) error {
-	version := strings.TrimPrefix(tag, "sdk/python/")
-
-	var ctr *dagger.Container
-	if dryRun {
-		ctr = dag.PythonSDKDev().Build()
-	} else {
-		opts := dagger.PythonSDKDevPublishOpts{
-			Version: strings.TrimPrefix(version, "v"),
-		}
-		if pypiRepo == "test" {
-			opts.URL = "https://test.pypi.org/legacy/"
-		}
-		ctr = dag.PythonSDKDev().Publish(pypiToken, opts)
+	opts := dagger.PythonSDKDevPublishOpts{
+		Version: strings.TrimPrefix(tag, "sdk/python/v"),
+		Token:   pypiToken,
+		DryRun:  dryRun,
 	}
-	_, err := ctr.Sync(ctx)
+
+	if pypiRepo == "test" {
+		opts.URL = "https://test.pypi.org/legacy/"
+	}
+
+	_, err := dag.PythonSDKDev().Publish(opts).Sync(ctx)
 	if err != nil {
 		return err
 	}

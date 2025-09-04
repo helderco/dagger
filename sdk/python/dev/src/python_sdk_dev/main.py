@@ -241,9 +241,9 @@ class PythonSdkDev:
     def publish(
         self,
         token: Annotated[
-            dagger.Secret,
+            dagger.Secret | None,
             Doc("The token for the upload"),
-        ],
+        ] = None,
         version: Annotated[
             str,
             Doc("The version for the distribution package to publish"),
@@ -252,14 +252,28 @@ class PythonSdkDev:
             str,
             Doc("The URL of the upload endpoint (empty means PyPI)"),
         ] = "",
+        dry_run: Annotated[
+            bool,
+            Doc("Perform a dry run without uploading files"),
+        ] = False,
     ) -> dagger.Container:
         """Publish Python SDK client library to PyPI."""
-        ctr = self.build(version).with_secret_variable("UV_PUBLISH_TOKEN", token)
+        if not url and not token:
+            raise ValueError("token is required when publishing to PyPI")
+
+        ctr = self.build(version)
+
+        if token:
+            ctr = ctr.with_secret_variable("UV_PUBLISH_TOKEN", token)
 
         if url:
             ctr = ctr.with_env_variable("UV_PUBLISH_URL", url)
 
-        return ctr.with_exec(["uv", "publish"])
+        args = ["uv", "publish"]
+        if dry_run:
+            args.append("--dry-run")
+
+        return ctr.with_exec(args)
 
     @function
     async def test_publish(
