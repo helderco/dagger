@@ -89,6 +89,10 @@ type Alpine struct {
 	GoArch string
 }
 
+func (m *Alpine) TestMe() {
+	// some comment
+}
+
 // Build an Alpine Linux container
 func (m *Alpine) Container(ctx context.Context) (*dagger.Container, error) {
 	var branch *goapk.ReleaseBranch

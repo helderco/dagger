@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"dagger.io/dagger/telemetry"
+	"github.com/dagger/dagger/engine/slog"
 	"github.com/spf13/cobra"
 	"mvdan.cc/sh/v3/interp"
 )
@@ -609,18 +610,49 @@ Without arguments, the current working directory is replaced by the initial cont
 				if def.Source == nil {
 					newDef, err = initializeCore(ctx, h.dag)
 				} else {
-					newDef, err = initializeModule(ctx, h.dag, def.SourceRoot, def.Source)
+					// Make sure the source is up-to-date
+					modSrc, err := def.Source.Sync(ctx)
+					if err != nil {
+						return err
+					}
+					newDef, err = initializeModule(ctx, h.dag, def.SourceRoot, modSrc)
 				}
 				if err != nil {
 					return fmt.Errorf("failed to reinitialize module: %w", err)
 				}
 
 				// Update handler state with new definition
-				h.modDefs.Store(def.SourceDigest, newDef)
+				h.modDefs.Store(newDef.SourceDigest, newDef)
 
-				// Reload type definitions
-				if err := newDef.loadTypeDefs(ctx, h.dag); err != nil {
-					return fmt.Errorf("failed to reload type definitions: %w", err)
+				pwd := h.Pwd()
+				slog := slog.SpanLogger(ctx, InstrumentationLibrary)
+				slog.Debug("refreshed", "oldDigest", def.SourceDigest, "newDigest", newDef.SourceDigest, "pwd", pwd)
+
+				if newDef.SourceDigest != def.SourceDigest {
+
+					// Reuse change dir mechanism to update the new digest
+					// in a consistent way. In most cases it's expected that
+					// that current path remains the same, unless
+
+					h.mu.Lock()
+					oldwd := h.oldwd
+					h.mu.Unlock()
+
+					err := h.ChangeDir(ctx, pwd)
+					if err != nil {
+						return fmt.Errorf("failed to reload module with new digest")
+					}
+
+					h.mu.Lock()
+					h.oldwd = oldwd
+					h.mu.Unlock()
+
+					// TODO: there could still be references to the old digest,
+					// in saved variables for example. Need to update them,
+					// or warn user about it.
+					//
+
+					// h.modDefs.Delete(def.SourceDigest)
 				}
 
 				return nil
