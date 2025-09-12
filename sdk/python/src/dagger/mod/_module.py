@@ -307,9 +307,13 @@ class Module:
         )
         if fn.return_type is not None:
             try:
-                return await self.unstructure(result, fn.return_type)
+                return await self.unstructure(
+                    result, fn.return_type, getattr(fn, "wrapped", None)
+                )
+            except InvalidResultError:
+                raise
             except Exception as e:
-                log_exception_only(e, "Invalid result from function")
+                logger.exception("Invalid result from function")
                 msg = transform_error(
                     e,
                     origin=getattr(fn, "wrapped", None),
@@ -413,9 +417,37 @@ class Module:
         """Convert a primitive value to the expected type."""
         return await asyncify(self._converter.structure, obj, cl)
 
-    async def unstructure(self, obj: Any, unstructure_as: Any) -> Awaitable[Any]:
+    async def unstructure(
+        self, obj: Any, unstructure_as: Any, origin: Any | None = None
+    ) -> Awaitable[Any]:
         """Convert a result to primitive values."""
-        return await asyncify(self._converter.unstructure, obj, unstructure_as)
+        return await asyncify(self.sunstructure, obj, unstructure_as, origin)
+
+    def sunstructure(
+        self, obj: Any, unstructure_as: Any, origin: Any | None = None
+    ) -> Awaitable[Any]:
+        try:
+            return self._converter.unstructure(obj, unstructure_as)
+        except Exception as e:
+            tb = e.__traceback__
+            # Exclude the line in "try" above
+            if tb:
+                tb = tb.tb_next
+            logger.exception(
+                "Invalid result from function",
+                exc_info=(type(e), e, tb),
+            )
+            msg = transform_error(
+                e,
+                origin=origin,
+                typ=unstructure_as,
+            )
+            msg += (
+                "\n"
+                "Please check if the returned value at runtime matches "
+                "the function's declared return type."
+            )
+            raise InvalidResultError(msg) from e
 
     def get_object(self, name: str) -> ObjectType:
         """Get the object type definition for the given name."""
